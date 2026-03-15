@@ -370,24 +370,25 @@
     // DATA — Edit this section to update the dashboard
     // ==========================================
     const DATA = {
-        lastUpdated: "2025-07-15",
+        lastUpdated: "2025-03-15",
         cards: [
             {
                 name: "Plata Card",
                 color: "#c0c0c0",
                 cutDay: 26,
                 payments: {
-                    "2025-07": { amount: 0, status: "overdue", note: "Atrasada" },
-                    "2025-08": { amount: 0, status: "upcoming", note: "Corte día 26" },
+                    "2025-03": { amount: 0, status: "overdue", note: "Atrasada · Corte día 26" },
                 }
             },
             {
                 name: "Rappi Card",
                 color: "#ff6b35",
-                cutDay: 4,
+                cutDay: 15,
+                payDay: 9,
+                clabe: "646180120637324407",
                 payments: {
-                    "2025-07": { amount: 0, status: "overdue", note: "Atrasada" },
-                    "2025-08": { amount: 0, status: "upcoming", note: "Corte día 4-5 ago" },
+                    "2025-02": { amount: 16941.49, status: "overdue", note: "Corte 15 feb · Pago 9 mar · ATRASADA" },
+                    "2025-03": { amount: 0, status: "upcoming", note: "Corte 15 mar · Pago ~9 abr" },
                 }
             },
             {
@@ -395,8 +396,7 @@
                 color: "#ff8c00",
                 cutDay: 11,
                 payments: {
-                    "2025-07": { amount: 0, status: "overdue", note: "Atrasada" },
-                    "2025-08": { amount: 0, status: "upcoming", note: "Corte día 11 ago" },
+                    "2025-03": { amount: 0, status: "overdue", note: "Atrasada · Corte día 11" },
                 }
             },
             {
@@ -404,8 +404,7 @@
                 color: "#820ad1",
                 cutDay: 4,
                 payments: {
-                    "2025-07": { amount: 0, status: "overdue", note: "Atrasada" },
-                    "2025-08": { amount: 0, status: "upcoming", note: "Corte día 4 ago" },
+                    "2025-03": { amount: 0, status: "overdue", note: "Atrasada · Corte día 4" },
                 }
             },
         ],
@@ -518,6 +517,7 @@
                         <span>Nota</span>
                         <span class="value">${c.payment.note || '—'}</span>
                     </div>
+                    ${c.clabe ? `<div class="card-detail"><span>CLABE</span><span class="value" style="font-size:11px;font-family:monospace">${c.clabe}</span></div>` : ''}
                     <div class="card-amount">${fmtMoney(c.payment.amount)}</div>
                 </div>
             `).join('');
@@ -560,7 +560,7 @@
             new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: ['Jul 2025', 'Ago 2025', 'Sep 2025'],
+                    labels: ['Feb 2025', 'Mar 2025', 'Abr 2025'],
                     datasets: [{
                         label: 'Gasto total',
                         data: [0, 0, 0],
