@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bills & Docs 💸</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1"></script>
+    <style>
+        :root {
+            --bg: #0f0f13;
+            --bg-card: #1a1a24;
+            --bg-card-hover: #22222e;
+            --text: #e8e8ed;
+            --text-dim: #8888a0;
+            --accent: #6c5ce7;
+            --green: #00b894;
+            --yellow: #fdcb6e;
+            --red: #e17055;
+            --blue: #74b9ff;
+            --purple: #a29bfe;
+            --pink: #fd79a8;
+            --border: rgba(255,255,255,0.06);
+            --gap: 16px;
+            --radius: 14px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px 16px 40px;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            padding: 32px 0 24px;
+        }
+        .header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+        .header .subtitle {
+            color: var(--text-dim);
+            font-size: 14px;
+            margin-top: 4px;
+        }
+        .header .last-updated {
+            color: var(--text-dim);
+            font-size: 11px;
+            margin-top: 8px;
+            opacity: 0.6;
+        }
+
+        /* Month Selector */
+        .month-selector {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+        .month-btn {
+            padding: 8px 18px;
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            background: transparent;
+            color: var(--text-dim);
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .month-btn:hover { border-color: var(--accent); color: var(--text); }
+        .month-btn.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #fff;
+            font-weight: 600;
+        }
+
+        /* KPI Row */
+        .kpi-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: var(--gap);
+            margin-bottom: 24px;
+        }
+        .kpi-card {
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            padding: 20px;
+            text-align: center;
+            border: 1px solid var(--border);
+        }
+        .kpi-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-dim);
+            margin-bottom: 6px;
+        }
+        .kpi-value {
+            font-size: 26px;
+            font-weight: 700;
+        }
+        .kpi-sub {
+            font-size: 11px;
+            color: var(--text-dim);
+            margin-top: 2px;
+        }
+
+        /* Cards Section */
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .section-title .emoji { font-size: 18px; }
+
+        /* Card Grid */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: var(--gap);
+            margin-bottom: 28px;
+        }
+
+        .credit-card {
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            padding: 20px;
+            border: 1px solid var(--border);
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.15s;
+        }
+        .credit-card:hover { transform: translateY(-2px); }
+
+        .credit-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 3px;
+        }
+        .credit-card.overdue::before { background: var(--red); }
+        .credit-card.upcoming::before { background: var(--yellow); }
+        .credit-card.paid::before { background: var(--green); }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+        .card-name {
+            font-size: 15px;
+            font-weight: 600;
+        }
+        .card-status {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-weight: 600;
+        }
+        .card-status.overdue { background: rgba(225,112,85,0.15); color: var(--red); }
+        .card-status.upcoming { background: rgba(253,203,110,0.15); color: var(--yellow); }
+        .card-status.paid { background: rgba(0,184,148,0.15); color: var(--green); }
+
+        .card-detail {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: var(--text-dim);
+            margin-bottom: 4px;
+        }
+        .card-detail .value { color: var(--text); font-weight: 500; }
+
+        .card-amount {
+            font-size: 22px;
+            font-weight: 700;
+            margin-top: 12px;
+        }
+
+        /* Pending Purchases */
+        .purchases-list {
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            margin-bottom: 28px;
+            overflow: hidden;
+        }
+        .purchase-item {
+            padding: 14px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            transition: background 0.15s;
+        }
+        .purchase-item:last-child { border-bottom: none; }
+        .purchase-item:hover { background: var(--bg-card-hover); }
+        .purchase-item .name {
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .purchase-item .meta {
+            font-size: 11px;
+            color: var(--text-dim);
+            margin-top: 2px;
+        }
+        .purchase-item .price {
+            font-size: 14px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        .purchase-item .priority {
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 4px;
+            display: inline-block;
+        }
+        .priority.high { background: rgba(225,112,85,0.15); color: var(--red); }
+        .priority.medium { background: rgba(253,203,110,0.15); color: var(--yellow); }
+        .priority.low { background: rgba(116,185,255,0.15); color: var(--blue); }
+
+        /* Chart */
+        .chart-card {
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            padding: 20px;
+            border: 1px solid var(--border);
+            margin-bottom: 28px;
+        }
+        .chart-card canvas {
+            max-height: 250px;
+        }
+
+        /* Timeline */
+        .timeline {
+            position: relative;
+            padding-left: 24px;
+            margin-bottom: 28px;
+        }
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 8px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: var(--border);
+        }
+        .timeline-item {
+            position: relative;
+            margin-bottom: 16px;
+            padding-left: 16px;
+        }
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -20px;
+            top: 6px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            border: 2px solid;
+        }
+        .timeline-item.overdue::before { border-color: var(--red); background: rgba(225,112,85,0.3); }
+        .timeline-item.upcoming::before { border-color: var(--yellow); background: rgba(253,203,110,0.3); }
+        .timeline-item.paid::before { border-color: var(--green); background: rgba(0,184,148,0.3); }
+
+        .timeline-date {
+            font-size: 12px;
+            color: var(--text-dim);
+            font-weight: 500;
+        }
+        .timeline-label {
+            font-size: 14px;
+            font-weight: 600;
+            margin-top: 2px;
+        }
+        .timeline-amount {
+            font-size: 12px;
+            color: var(--text-dim);
+        }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-dim);
+            font-size: 14px;
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .kpi-row { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+            .kpi-card { padding: 14px 10px; }
+            .kpi-value { font-size: 20px; }
+            .cards-grid { grid-template-columns: 1fr; }
+            .card-amount { font-size: 18px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>💸 Bills & Docs</h1>
+            <div class="subtitle">Raul & Hannah</div>
+            <div class="last-updated" id="lastUpdated"></div>
+        </div>
+
+        <div class="month-selector" id="monthSelector"></div>
+
+        <div class="kpi-row">
+            <div class="kpi-card">
+                <div class="kpi-label">Total mes</div>
+                <div class="kpi-value" id="kpiTotal">$0</div>
+                <div class="kpi-sub" id="kpiCards">0 tarjetas</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">Pendiente</div>
+                <div class="kpi-value" id="kpiPending" style="color: var(--red)">$0</div>
+                <div class="kpi-sub" id="kpiPendingCount">0 pagos</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">Pagado</div>
+                <div class="kpi-value" id="kpiPaid" style="color: var(--green)">$0</div>
+                <div class="kpi-sub" id="kpiPaidCount">0 pagos</div>
+            </div>
+        </div>
+
+        <div class="section-title"><span class="emoji">💳</span> Tarjetas</div>
+        <div class="cards-grid" id="cardsGrid"></div>
+
+        <div class="section-title"><span class="emoji">📅</span> Timeline de pagos</div>
+        <div class="timeline" id="timeline"></div>
+
+        <div class="section-title"><span class="emoji">🛒</span> Compras pendientes</div>
+        <div class="purchases-list" id="purchasesList"></div>
+
+        <div class="section-title"><span class="emoji">📊</span> Gastos por mes</div>
+        <div class="chart-card">
+            <canvas id="monthlyChart"></canvas>
+        </div>
+    </div>
+
+    <script>
+    // ==========================================
+    // DATA — Edit this section to update the dashboard
+    // ==========================================
+    const DATA = {
+        lastUpdated: "2025-07-15",
+        cards: [
+            {
+                name: "Plata Card",
+                color: "#c0c0c0",
+                cutDay: 26,
+                payments: {
+                    "2025-07": { amount: 0, status: "overdue", note: "Atrasada" },
+                    "2025-08": { amount: 0, status: "upcoming", note: "Corte día 26" },
+                }
+            },
+            {
+                name: "Rappi Card",
+                color: "#ff6b35",
+                cutDay: 4,
+                payments: {
+                    "2025-07": { amount: 0, status: "overdue", note: "Atrasada" },
+                    "2025-08": { amount: 0, status: "upcoming", note: "Corte día 4-5 ago" },
+                }
+            },
+            {
+                name: "Didi Card",
+                color: "#ff8c00",
+                cutDay: 11,
+                payments: {
+                    "2025-07": { amount: 0, status: "overdue", note: "Atrasada" },
+                    "2025-08": { amount: 0, status: "upcoming", note: "Corte día 11 ago" },
+                }
+            },
+            {
+                name: "Nu",
+                color: "#820ad1",
+                cutDay: 4,
+                payments: {
+                    "2025-07": { amount: 0, status: "overdue", note: "Atrasada" },
+                    "2025-08": { amount: 0, status: "upcoming", note: "Corte día 4 ago" },
+                }
+            },
+        ],
+        // Hannah's cards — add here when ready
+        // hannahCards: [],
+
+        pendingPurchases: [
+            // { name: "Ejemplo", meta: "Para la casa", amount: 1500, priority: "high" },
+        ],
+
+        // Monthly totals for chart (fill as we go)
+        monthlyTotals: {
+            // "2025-07": 5000,
+            // "2025-08": 3000,
+        }
+    };
+
+    // ==========================================
+    // DASHBOARD LOGIC
+    // ==========================================
+    const MONTHS = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+
+    function fmtMoney(n) {
+        if (n === 0) return '$—';
+        return '$' + n.toLocaleString('es-MX');
+    }
+
+    function fmtMonth(key) {
+        const [y, m] = key.split('-');
+        return MONTHS[parseInt(m)-1] + ' ' + y;
+    }
+
+    function getAvailableMonths() {
+        const months = new Set();
+        DATA.cards.forEach(c => {
+            Object.keys(c.payments).forEach(m => months.add(m));
+        });
+        return [...months].sort();
+    }
+
+    let currentMonth = null;
+
+    function init() {
+        document.getElementById('lastUpdated').textContent = 'Actualizado: ' + DATA.lastUpdated;
+
+        const months = getAvailableMonths();
+        if (months.length === 0) return;
+
+        // Default to latest month
+        currentMonth = months[months.length - 1];
+
+        // Render month selector
+        const sel = document.getElementById('monthSelector');
+        months.forEach(m => {
+            const btn = document.createElement('button');
+            btn.className = 'month-btn' + (m === currentMonth ? ' active' : '');
+            btn.textContent = fmtMonth(m);
+            btn.onclick = () => {
+                currentMonth = m;
+                document.querySelectorAll('.month-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                render();
+            };
+            sel.appendChild(btn);
+        });
+
+        render();
+        renderChart();
+    }
+
+    function render() {
+        // KPIs
+        let total = 0, pending = 0, paid = 0, pendingCount = 0, paidCount = 0;
+        const activeCards = [];
+
+        DATA.cards.forEach(card => {
+            const p = card.payments[currentMonth];
+            if (!p) return;
+            activeCards.push({ ...card, payment: p });
+            total += p.amount;
+            if (p.status === 'paid') { paid += p.amount; paidCount++; }
+            else { pending += p.amount; pendingCount++; }
+        });
+
+        document.getElementById('kpiTotal').textContent = fmtMoney(total);
+        document.getElementById('kpiCards').textContent = activeCards.length + ' tarjetas';
+        document.getElementById('kpiPending').textContent = fmtMoney(pending);
+        document.getElementById('kpiPendingCount').textContent = pendingCount + ' pagos';
+        document.getElementById('kpiPaid').textContent = fmtMoney(paid);
+        document.getElementById('kpiPaidCount').textContent = paidCount + ' pagos';
+
+        // Cards
+        const grid = document.getElementById('cardsGrid');
+        if (activeCards.length === 0) {
+            grid.innerHTML = '<div class="empty-state">No hay tarjetas para este mes</div>';
+        } else {
+            grid.innerHTML = activeCards.map(c => `
+                <div class="credit-card ${c.payment.status}">
+                    <div class="card-header">
+                        <div class="card-name">${c.name}</div>
+                        <div class="card-status ${c.payment.status}">
+                            ${c.payment.status === 'paid' ? '✓ Pagado' : c.payment.status === 'overdue' ? '⚠ Atrasado' : '⏳ Próximo'}
+                        </div>
+                    </div>
+                    <div class="card-detail">
+                        <span>Fecha de corte</span>
+                        <span class="value">Día ${c.cutDay}</span>
+                    </div>
+                    <div class="card-detail">
+                        <span>Nota</span>
+                        <span class="value">${c.payment.note || '—'}</span>
+                    </div>
+                    <div class="card-amount">${fmtMoney(c.payment.amount)}</div>
+                </div>
+            `).join('');
+        }
+
+        // Timeline
+        const timeline = document.getElementById('timeline');
+        const sorted = [...activeCards].sort((a, b) => a.cutDay - b.cutDay);
+        timeline.innerHTML = sorted.map(c => `
+            <div class="timeline-item ${c.payment.status}">
+                <div class="timeline-date">Día ${c.cutDay} · ${fmtMonth(currentMonth)}</div>
+                <div class="timeline-label">${c.name}</div>
+                <div class="timeline-amount">${fmtMoney(c.payment.amount)} · ${c.payment.note || ''}</div>
+            </div>
+        `).join('');
+
+        // Purchases
+        const list = document.getElementById('purchasesList');
+        if (DATA.pendingPurchases.length === 0) {
+            list.innerHTML = '<div class="empty-state">Sin compras pendientes 🎉</div>';
+        } else {
+            list.innerHTML = DATA.pendingPurchases.map(p => `
+                <div class="purchase-item">
+                    <div>
+                        <div class="name">${p.name}</div>
+                        <div class="meta">${p.meta || ''}</div>
+                        ${p.priority ? `<span class="priority ${p.priority}">${p.priority}</span>` : ''}
+                    </div>
+                    <div class="price">${fmtMoney(p.amount)}</div>
+                </div>
+            `).join('');
+        }
+    }
+
+    function renderChart() {
+        const months = Object.keys(DATA.monthlyTotals).sort();
+        if (months.length === 0) {
+            // Show placeholder
+            const ctx = document.getElementById('monthlyChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Jul 2025', 'Ago 2025', 'Sep 2025'],
+                    datasets: [{
+                        label: 'Gasto total',
+                        data: [0, 0, 0],
+                        backgroundColor: 'rgba(108,92,231,0.3)',
+                        borderColor: '#6c5ce7',
+                        borderWidth: 2,
+                        borderRadius: 6,
+                    }]
+                },
+                options: chartOptions()
+            });
+            return;
+        }
+
+        const ctx = document.getElementById('monthlyChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: months.map(fmtMonth),
+                datasets: [{
+                    label: 'Gasto total',
+                    data: months.map(m => DATA.monthlyTotals[m]),
+                    backgroundColor: 'rgba(108,92,231,0.4)',
+                    borderColor: '#6c5ce7',
+                    borderWidth: 2,
+                    borderRadius: 6,
+                }]
+            },
+            options: chartOptions()
+        });
+    }
+
+    function chartOptions() {
+        return {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: ctx => fmtMoney(ctx.parsed.y)
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: { display: false },
+                    ticks: { color: '#8888a0', font: { size: 12 } }
+                },
+                y: {
+                    beginAtZero: true,
+                    grid: { color: 'rgba(255,255,255,0.04)' },
+                    ticks: {
+                        color: '#8888a0',
+                        callback: v => '$' + v.toLocaleString('es-MX')
+                    }
+                }
+            }
+        };
+    }
+
+    init();
+    </script>
+</body>
+</html>
